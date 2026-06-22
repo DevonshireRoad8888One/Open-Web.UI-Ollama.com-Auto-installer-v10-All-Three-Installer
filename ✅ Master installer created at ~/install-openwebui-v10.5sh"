@@ -1,11 +1,11 @@
-cat > ~/install-openwebui-v10.4.sh << 'V10.4'
+cat > ~/install-openwebui-v10.5.sh << 'V10.5'
 #!/usr/bin/env bash
 set -euo pipefail
 umask 077
 
 echo "=================================================="
-echo "🚀 Open WebUI All-Three Installer v10.4"
-echo "   Ubuntu 26.04 • Python 3.11 • Stable"
+echo "🚀 Open WebUI All-Three Installer v10.5"
+echo "   Manual Control Only • No Systemd • Stable"
 echo "=================================================="
 
 MANAGER="$HOME/openwebui-manager"
@@ -19,12 +19,16 @@ declare -A INSTANCES=(
   [openwebui3]=8001
 )
 
-# ===================== System deps =====================
+# ===================== System dependencies =====================
 echo "📦 Installing system dependencies..."
 sudo apt update -y
 sudo apt install -y curl ca-certificates gnupg lsb-release psmisc iproute2 zstd \
-                    ffmpeg build-essential pkg-config software-properties-common \
-                    python3.11 python3.11-dev python3.11-venv python3.11-full python3-pip
+                    ffmpeg build-essential pkg-config software-properties-common
+
+# Install Python 3.11 (required by Open WebUI on Ubuntu 26.04)
+sudo add-apt-repository ppa:deadsnakes/ppa -y
+sudo apt update -y
+sudo apt install -y python3.11 python3.11-dev python3.11-venv python3.11-full python3-pip
 
 if ! command -v ollama >/dev/null 2>&1; then
     echo "🧠 Installing Ollama..."
@@ -35,8 +39,9 @@ fi
 cat > "$MANAGER/start-all.sh" << 'STARTALL'
 #!/usr/bin/env bash
 set -euo pipefail
-echo "🚀 Starting Open WebUI v10.4 stack..."
+echo "🚀 Starting Open WebUI v10.5 stack..."
 
+# Start shared Ollama
 if ! curl -fsS "http://127.0.0.1:11434/api/version" >/dev/null 2>&1; then
     echo "🔄 Starting shared Ollama..."
     nohup ollama serve > "$HOME/openwebui-manager/logs/ollama.log" 2>&1 &
@@ -51,8 +56,8 @@ for NAME in testwebui openwebui2ver7 openwebui3; do
         sleep 6
     fi
 done
-echo "✅ Stack started. Waiting..."
-sleep 25
+echo "✅ Stack started."
+sleep 20
 "$HOME/openwebui-manager/health-all.sh"
 STARTALL
 chmod +x "$MANAGER/start-all.sh"
@@ -74,7 +79,7 @@ chmod +x "$MANAGER/stop-all.sh"
 cat > "$MANAGER/health-all.sh" << 'HEALTH'
 #!/usr/bin/env bash
 set -euo pipefail
-echo "🔐 Open WebUI v10.4 Health Report"
+echo "🔐 Open WebUI v10.5 Health Report"
 echo "=================================================="
 echo "Date: $(date)"
 echo "Ollama (11434): $(curl -fsS "http://127.0.0.1:11434/api/version" >/dev/null 2>&1 && echo "✅ OK" || echo "❌ DOWN")"
@@ -160,11 +165,16 @@ STOP
 done
 
 echo ""
-echo "🎉 v10.4 Installation complete!"
+echo "🎉 v10.5 Installation complete!"
+echo "Use these commands:"
+echo "   ~/openwebui-manager/start-all.sh     # Start all"
+echo "   ~/openwebui-manager/stop-all.sh      # Stop all"
+echo "   ~/openwebui-manager/health-all.sh    # Check status"
+echo ""
 echo "Starting services now..."
 "$MANAGER/start-all.sh"
-V10.4
+V10.5
 
-chmod +x ~/install-openwebui-v10.4.sh
-echo "✅ Updated v10.4 installer ready!"
-echo "Run it with: ~/install-openwebui-v10.4.sh"
+chmod +x ~/install-openwebui-v10.5.sh
+echo "✅ v10.5 installer (manual only) created!"
+echo "Run it with: ~/install-openwebui-v10.5.sh"
