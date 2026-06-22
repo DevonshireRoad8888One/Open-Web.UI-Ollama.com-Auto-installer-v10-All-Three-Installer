@@ -1,4 +1,4 @@
-cat > ~/install-openwebui-v10.5.sh << 'V10.5'
+cat > ~/install-openwebui-v10.5.sh << 'V10.5.1'
 #!/usr/bin/env bash
 set -euo pipefail
 umask 077
