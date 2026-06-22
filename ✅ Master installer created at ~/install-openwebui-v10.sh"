@@ -1,0 +1,334 @@
+cat > ~/install-openwebui-v10.sh << 'V10MASTER'
+#!/usr/bin/env bash
+set -euo pipefail
+umask 077
+
+echo "=================================================="
+echo "🚀 Open WebUI All-Three Installer v10"
+echo "   Shared Ollama • OTEL Enabled • PID Control • Systemd Ready"
+echo "=================================================="
+
+MANAGER="$HOME/openwebui-manager"
+mkdir -p "$MANAGER"/{backups,logs,run}
+
+OLLAMA_PORT=11434
+OPENWEBUI_VERSION="latest"          # change to e.g. "0.6.4" to pin
+OTEL_ENDPOINT="http://127.0.0.1:4317"
+
+declare -A INSTANCES=(
+  [testwebui]=8080
+  [openwebui2ver7]=8000
+  [openwebui3]=8001
+)
+
+# ===================== System dependencies =====================
+echo "📦 Installing system dependencies..."
+sudo apt update -y
+sudo apt install -y curl ca-certificates gnupg lsb-release psmisc iproute2 zstd \
+                    ffmpeg build-essential pkg-config software-properties-common
+
+if ! command -v python3.12 >/dev/null 2>&1; then
+    sudo add-apt-repository ppa:deadsnakes/ppa -y
+    sudo apt update -y
+    sudo apt install -y python3.12 python3.12-dev python3.12-venv python3-pip
+fi
+
+if ! command -v ollama >/dev/null 2>&1; then
+    echo "🧠 Installing Ollama..."
+    curl -fsSL https://ollama.com/install.sh | sh
+fi
+
+# ===================== Management scripts =====================
+cat > "$MANAGER/start-all.sh" << 'STARTALL'
+#!/usr/bin/env bash
+set -euo pipefail
+MANAGER="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$MANAGER"
+
+echo "🚀 Starting Open WebUI v10 stack..."
+
+# Shared Ollama
+if ! curl -fsS "http://127.0.0.1:11434/api/version" >/dev/null 2>&1; then
+    echo "🔄 Starting shared Ollama..."
+    nohup ollama serve > logs/ollama.log 2>&1 &
+    echo $! > run/ollama.pid
+    sleep 6
+fi
+
+for NAME in testwebui openwebui2ver7 openwebui3; do
+    if [ -x "$HOME/$NAME/start.sh" ]; then
+        echo "Starting $NAME..."
+        "$HOME/$NAME/start.sh"
+        sleep 4
+    fi
+done
+
+echo "✅ Stack started. Run '$MANAGER/health-all.sh' for status."
+STARTALL
+chmod +x "$MANAGER/start-all.sh"
+
+cat > "$MANAGER/stop-all.sh" << 'STOPALL'
+#!/usr/bin/env bash
+set -euo pipefail
+echo "🛑 Stopping all services..."
+
+for dir in ~/testwebui ~/openwebui2ver7 ~/openwebui3; do
+    if [ -f "$dir/run/openwebui.pid" ]; then
+        kill "$(cat "$dir/run/openwebui.pid")" 2>/dev/null || true
+        rm -f "$dir/run/openwebui.pid"
+    fi
+done
+
+if [ -f "$HOME/openwebui-manager/run/ollama.pid" ]; then
+    kill "$(cat "$HOME/openwebui-manager/run/ollama.pid")" 2>/dev/null || true
+    rm -f "$HOME/openwebui-manager/run/ollama.pid"
+fi
+echo "✅ All services stopped."
+STOPALL
+chmod +x "$MANAGER/stop-all.sh"
+
+cat > "$MANAGER/health-all.sh" << 'HEALTH'
+#!/usr/bin/env bash
+set -euo pipefail
+echo "🔐 Open WebUI v10 – Security & Health Report"
+echo "=================================================="
+echo "Date: $(date)"
+echo "Shared Ollama (11434):"
+curl -fsS "http://127.0.0.1:11434/api/version" >/dev/null 2>&1 && echo "✅ Ollama OK" || echo "❌ Ollama not responding"
+echo ""
+
+for dir in ~/testwebui ~/openwebui2ver7 ~/openwebui3; do
+    [ -d "$dir" ] || continue
+    NAME=$(basename "$dir")
+    echo "Instance: $NAME"
+    echo "----------------------------------------"
+    if [ -f "$dir/.env" ]; then
+        PORT=$(grep '^WEBUI_PORT=' "$dir/.env" | cut -d= -f2)
+        CODE=$(curl -fsS -o /dev/null -w "%{http_code}" "http://127.0.0.1:$PORT" 2>/dev/null || echo "000")
+        [[ "$CODE" =~ ^(200|302)$ ]] && echo "✅ WebUI OK (HTTP $CODE)" || echo "⚠️  WebUI not responding (HTTP $CODE)"
+    fi
+    echo "Permissions : $(ls -ld "$dir" | awk '{print $1}')"
+    echo "Disk usage  : Data=$(du -sh "$dir/data" 2>/dev/null | cut -f1) | Models=$(du -sh "$dir/models" 2>/dev/null | cut -f1)"
+    echo ""
+done
+echo "=================================================="
+HEALTH
+chmod +x "$MANAGER/health-all.sh"
+
+cat > "$MANAGER/backup-all.sh" << 'BACKUP'
+#!/usr/bin/env bash
+set -euo pipefail
+DATE=$(date +%Y%m%d_%H%M%S)
+mkdir -p "$HOME/openwebui-manager/backups"
+for NAME in testwebui openwebui2ver7 openwebui3; do
+    if [ -d "$HOME/$NAME" ]; then
+        echo "Backing up $NAME..."
+        tar -C "$HOME" -cf - "$NAME" | zstd -T0 -19 > "$HOME/openwebui-manager/backups/${NAME}_${DATE}.tar.zst"
+    fi
+done
+echo "✅ Backups written to ~/openwebui-manager/backups"
+BACKUP
+chmod +x "$MANAGER/backup-all.sh"
+
+cat > "$MANAGER/update-all.sh" << 'UPDATE'
+#!/usr/bin/env bash
+set -euo pipefail
+for NAME in testwebui openwebui2ver7 openwebui3; do
+    BASE="$HOME/$NAME"
+    [ -d "$BASE" ] || continue
+    echo "Updating $NAME..."
+    "$BASE/env/bin/pip" install --upgrade open-webui
+done
+echo "✅ All instances updated. Restart with start-all.sh"
+UPDATE
+chmod +x "$MANAGER/update-all.sh"
+
+cat > "$MANAGER/repair-all.sh" << 'REPAIR'
+#!/usr/bin/env bash
+set -euo pipefail
+for NAME in testwebui openwebui2ver7 openwebui3; do
+    BASE="$HOME/$NAME"
+    [ -d "$BASE" ] || continue
+    echo "Repairing $NAME..."
+    mkdir -p "$BASE"/{data,models,logs,run}
+    chmod 700 "$BASE" "$BASE"/{data,models,logs,run}
+    if [ ! -f "$BASE/.webui_secret_key" ]; then
+        python3.12 -c 'import secrets; print(secrets.token_urlsafe(48))' > "$BASE/.webui_secret_key"
+        chmod 600 "$BASE/.webui_secret_key"
+    fi
+    [ -d "$BASE/env" ] || python3.12 -m venv "$BASE/env"
+done
+echo "✅ Repair finished. Run start-all.sh"
+REPAIR
+chmod +x "$MANAGER/repair-all.sh"
+
+# ===================== Create the three instances =====================
+for NAME in "${!INSTANCES[@]}"; do
+    PORT=${INSTANCES[$NAME]}
+    BASE="$HOME/$NAME"
+    echo ""
+    echo "🔄 Setting up $NAME (WebUI port $PORT, shared Ollama $OLLAMA_PORT)..."
+
+    if [ -d "$BASE" ]; then
+        echo "   Backing up old folder..."
+        mv "$BASE" "$BASE.backup.$(date +%Y%m%d_%H%M%S)"
+    fi
+
+    mkdir -p "$BASE"/{data,models,logs,run}
+    chmod 700 "$BASE" "$BASE"/{data,models,logs,run}
+
+    python3.12 -m venv "$BASE/env"
+    "$BASE/env/bin/pip" install --upgrade pip setuptools wheel
+    "$BASE/env/bin/pip" install ${OPENWEBUI_VERSION:+==}$OPENWEBUI_VERSION open-webui
+    "$BASE/env/bin/pip" install opentelemetry-api opentelemetry-sdk opentelemetry-exporter-otlp-proto-grpc
+
+    SECRET=$(python3.12 -c 'import secrets; print(secrets.token_urlsafe(48))')
+    echo -n "$SECRET" > "$BASE/.webui_secret_key"
+    chmod 600 "$BASE/.webui_secret_key"
+
+    cat > "$BASE/.env" << ENV
+WEBUI_PORT=$PORT
+WEBUI_SECRET_KEY=$SECRET
+WEBUI_AUTH=True
+ENABLE_SIGNUP=False
+JWT_EXPIRES_IN=30d
+ENABLE_PERSISTENT_CONFIG=True
+CORS_ALLOW_ORIGIN=http://127.0.0.1:$PORT,http://localhost:$PORT
+OLLAMA_BASE_URL=http://127.0.0.1:$OLLAMA_PORT
+HOST=127.0.0.1
+PORT=$PORT
+
+# OTEL enabled by default (as requested)
+ENABLE_OTEL=true
+ENABLE_OTEL_TRACES=true
+ENABLE_OTEL_METRICS=true
+ENABLE_OTEL_LOGS=true
+OTEL_EXPORTER_OTLP_ENDPOINT=$OTEL_ENDPOINT
+OTEL_EXPORTER_OTLP_INSECURE=true
+OTEL_SERVICE_NAME=open-webui-$NAME
+ENV
+    chmod 600 "$BASE/.env"
+
+    # start.sh (PID-based, secret exported, OTEL respected)
+    cat > "$BASE/start.sh" << 'START'
+#!/usr/bin/env bash
+set -euo pipefail
+BASE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$BASE"
+umask 077
+
+if [ -f .env ]; then
+    set -a; . .env; set +a
+fi
+export WEBUI_SECRET_KEY="$(cat .webui_secret_key)"
+
+mkdir -p data models logs run
+source env/bin/activate
+
+NAME="$(basename "$BASE")"
+echo "🚀 Starting $NAME → http://127.0.0.1:$WEBUI_PORT"
+nohup open-webui serve --host 127.0.0.1 --port "$WEBUI_PORT" > logs/openwebui.log 2>&1 &
+echo $! > run/openwebui.pid
+echo "✅ $NAME started (PID $(cat run/openwebui.pid))"
+START
+    chmod +x "$BASE/start.sh"
+
+    # stop.sh
+    cat > "$BASE/stop.sh" << 'STOP'
+#!/usr/bin/env bash
+set -euo pipefail
+BASE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [ -f "$BASE/run/openwebui.pid" ]; then
+    kill "$(cat "$BASE/run/openwebui.pid")" 2>/dev/null || true
+    rm -f "$BASE/run/openwebui.pid"
+fi
+echo "🛑 $(basename "$BASE") stopped."
+STOP
+    chmod +x "$BASE/stop.sh"
+
+    echo "✅ $NAME setup complete"
+done
+
+# ===================== Systemd units (optional but recommended) =====================
+cat > "$MANAGER/ollama.service" << EOF
+[Unit]
+Description=Shared Ollama
+After=network.target
+
+[Service]
+Type=simple
+User=$USER
+ExecStart=/usr/local/bin/ollama serve
+Environment="OLLAMA_HOST=127.0.0.1:11434"
+Restart=always
+RestartSec=5
+StandardOutput=append:$MANAGER/logs/ollama.log
+StandardError=append:$MANAGER/logs/ollama.log
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+for NAME in "${!INSTANCES[@]}"; do
+    cat > "$MANAGER/openwebui-$NAME.service" << EOF
+[Unit]
+Description=Open WebUI – $NAME
+After=ollama.service
+Wants=ollama.service
+
+[Service]
+Type=simple
+User=$USER
+WorkingDirectory=$HOME/$NAME
+ExecStart=$HOME/$NAME/start.sh
+PIDFile=$HOME/$NAME/run/openwebui.pid
+Restart=on-failure
+RestartSec=5
+StandardOutput=append:$HOME/$NAME/logs/openwebui.log
+StandardError=append:$HOME/$NAME/logs/openwebui.log
+
+[Install]
+WantedBy=multi-user.target
+EOF
+done
+
+# ===================== Final steps =====================
+echo ""
+echo "🎉 All three instances installed successfully!"
+echo ""
+echo "Management commands (already started below):"
+echo "   $MANAGER/start-all.sh"
+echo "   $MANAGER/stop-all.sh"
+echo "   $MANAGER/health-all.sh"
+echo "   $MANAGER/backup-all.sh"
+echo "   $MANAGER/update-all.sh"
+echo "   $MANAGER/repair-all.sh"
+echo ""
+
+echo "🚀 Auto-starting all services now..."
+"$MANAGER/start-all.sh" &
+
+sleep 12
+echo ""
+echo "🔍 Running security & health check..."
+"$MANAGER/health-all.sh"
+
+echo ""
+echo "✅ Installation complete!"
+echo "Open in your browser:"
+echo "   http://127.0.0.1:8080   (testwebui)"
+echo "   http://127.0.0.1:8000   (openwebui2ver7)"
+echo "   http://127.0.0.1:8001   (openwebui3)"
+echo ""
+echo "To make them start on boot:"
+echo "   sudo cp $MANAGER/*.service /etc/systemd/system/"
+echo "   sudo systemctl daemon-reload"
+echo "   sudo systemctl enable --now ollama openwebui-testwebui openwebui-openwebui2ver7 openwebui-openwebui3"
+echo ""
+echo "Run the health check again and paste the output if you want any final tweaks."
+V10MASTER
+
+chmod +x ~/install-openwebui-v10.sh
+echo "✅ Master installer created at ~/install-openwebui-v10.sh"
+echo "Run it now with:"
+echo "   ~/install-openwebui-v10.sh"
