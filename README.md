@@ -24,6 +24,74 @@ sudo systemctl stop openwebui-testwebui openwebui-openwebui2ver7 openwebui-openw
 # View live logs (very useful)
 journalctl -u openwebui-openwebui2ver7 -f
 
+Ok the 3 servers are running in the browser, how to start the servers one at a time, can we do that, for people that don't want the system to start on boot and they want to start the servers one at a time.
+
+ Perfect! Yes, you can easily start the servers one at a time manually.Here’s the best way to do it:1. Start One Server at a Time (Manual Control)bash
+
+# Start only the main one (recommended)
+~/openwebui2ver7/start.sh
+
+# Start test instance
+~/testwebui/start.sh
+
+# Start the third one
+~/openwebui3/start.sh
+
+2. Stop One Serverbash
+
+~/openwebui2ver7/stop.sh
+~/testwebui/stop.sh
+~/openwebui3/stop.sh
+
+3. Disable Auto-Start on Boot (So they don't start automatically)Run this if you don’t want them to start on boot:bash
+
+sudo systemctl disable ollama openwebui-testwebui openwebui-openwebui2ver7 openwebui-openwebui3
+
+To re-enable auto-start later:bash
+
+sudo systemctl enable ollama openwebui-testwebui openwebui-openwebui2ver7 openwebui-openwebui3
+
+4. Recommended Manual WorkflowCreate a simple helper script for easy manual control:bash
+
+cat > ~/start-webui.sh << 'EOF'
+#!/usr/bin/env bash
+echo "Select which instance to start:"
+echo "1) openwebui2ver7 (port 8000 - Main)"
+echo "2) testwebui (port 8080)"
+echo "3) openwebui3 (port 8001)"
+echo "4) All three"
+read -p "Enter choice (1-4): " choice
+
+case $choice in
+    1) ~/openwebui2ver7/start.sh ;;
+    2) ~/testwebui/start.sh ;;
+    3) ~/openwebui3/start.sh ;;
+    4) ~/openwebui-manager/start-all.sh ;;
+    *) echo "Invalid choice" ;;
+esac
+EOF
+
+chmod +x ~/start-webui.sh
+
+Now you can just run:bash
+
+~/start-webui.sh
+
+Summary of Commands You’ll Use MostAction
+Command
+Start main server
+~/openwebui2ver7/start.sh
+Start all
+~/openwebui-manager/start-all.sh
+Stop all
+~/openwebui-manager/stop-all.sh
+Check status
+~/openwebui-manager/health-all.sh
+Disable boot auto-start
+sudo systemctl disable ... (above)
+
+Would you like me to also make a simple menu script (with options to start/stop/restart individual ones) or add nightly backups next?Your setup is now very flexible — you can use systemd or manual start whenever you want. Let me know what else you need! 
+
 
 Here is your final, polished “v10 All-Three Installer” (the version that closes the remaining ~3 % gap from the v9 discussion).
 
