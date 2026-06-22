@@ -19,13 +19,13 @@ declare -A INSTANCES=(
   [openwebui3]=8001
 )
 
-# System deps
+# ===================== System deps =====================
 echo "📦 Installing system dependencies..."
 sudo apt update -y
 sudo apt install -y curl ca-certificates gnupg lsb-release psmisc iproute2 zstd \
                     ffmpeg build-essential pkg-config software-properties-common
 
-# Python 3.11
+# Python 3.11 for Ubuntu 26.04
 sudo add-apt-repository ppa:deadsnakes/ppa -y
 sudo apt update -y
 sudo apt install -y python3.11 python3.11-dev python3.11-venv python3.11-full python3-pip
@@ -35,7 +35,7 @@ if ! command -v ollama >/dev/null 2>&1; then
     curl -fsSL https://ollama.com/install.sh | sh
 fi
 
-# Management scripts
+# ===================== Management scripts =====================
 cat > "$MANAGER/start-all.sh" << 'STARTALL'
 #!/usr/bin/env bash
 set -euo pipefail
@@ -95,7 +95,7 @@ done
 HEALTH
 chmod +x "$MANAGER/health-all.sh"
 
-# Create instances
+# ===================== Create instances =====================
 for NAME in "${!INSTANCES[@]}"; do
     PORT=${INSTANCES[$NAME]}
     BASE="$HOME/$NAME"
@@ -103,6 +103,7 @@ for NAME in "${!INSTANCES[@]}"; do
     echo "🔄 Setting up $NAME (port $PORT)..."
 
     if [ -d "$BASE" ]; then
+        echo "   Backing up old folder..."
         mv "$BASE" "$BASE.backup.$(date +%Y%m%d_%H%M%S)"
     fi
 
@@ -129,4 +130,52 @@ ENABLE_OTEL=false
 ENV
     chmod 600 "$BASE/.env"
 
-   
+    cat > "$BASE/start.sh" << 'START'
+#!/usr/bin/env bash
+set -euo pipefail
+BASE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$BASE"
+umask 077
+
+[ -f .env ] && { set -a; . .env; set +a; }
+export WEBUI_SECRET_KEY="$(cat .webui_secret_key 2>/dev/null || echo '')"
+
+mkdir -p data models logs run
+source env/bin/activate
+
+NAME="$(basename "$BASE")"
+echo "🚀 Starting $NAME → http://127.0.0.1:$WEBUI_PORT"
+nohup open-webui serve --host 127.0.0.1 --port "$WEBUI_PORT" > logs/openwebui.log 2>&1 &
+echo $! > run/openwebui.pid
+echo "✅ $NAME started (PID $(cat run/openwebui.pid))"
+START
+    chmod +x "$BASE/start.sh"
+
+    cat > "$BASE/stop.sh" << 'STOP'
+#!/usr/bin/env bash
+BASE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+[ -f "$BASE/run/openwebui.pid" ] && kill "$(cat "$BASE/run/openwebui.pid")" 2>/dev/null || true
+rm -f "$BASE/run/openwebui.pid"
+echo "🛑 $(basename "$BASE") stopped."
+STOP
+    chmod +x "$BASE/stop.sh"
+
+    echo "✅ $NAME setup complete"
+done
+
+echo ""
+echo "🎉 v10.5 Installation complete (Manual Mode)!"
+echo ""
+echo "Useful commands:"
+echo "   ~/openwebui-manager/start-all.sh     # Start all"
+echo "   ~/openwebui-manager/stop-all.sh      # Stop all"
+echo "   ~/openwebui-manager/health-all.sh    # Check status"
+echo "   ~/openwebui2ver7/start.sh            # Start main only"
+echo ""
+echo "Starting services now..."
+"$MANAGER/start-all.sh"
+V10.5
+
+chmod +x ~/install-openwebui-v10.5.sh
+echo "✅ v10.5 installer created successfully!"
+echo "Run it with: ~/install-openwebui-v10.5.sh"
