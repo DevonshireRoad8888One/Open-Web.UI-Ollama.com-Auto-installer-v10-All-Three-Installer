@@ -38,7 +38,6 @@ cat > "$MANAGER/start-all.sh" << 'STARTALL'
 set -euo pipefail
 echo "🚀 Starting Open WebUI v10.3 stack..."
 
-# Start shared Ollama
 if ! curl -fsS "http://127.0.0.1:11434/api/version" >/dev/null 2>&1; then
     echo "🔄 Starting shared Ollama..."
     nohup ollama serve > "$HOME/openwebui-manager/logs/ollama.log" 2>&1 &
@@ -93,7 +92,7 @@ done
 HEALTH
 chmod +x "$MANAGER/health-all.sh"
 
-# ===================== Create / Update instances =====================
+# ===================== Create instances =====================
 for NAME in "${!INSTANCES[@]}"; do
     PORT=${INSTANCES[$NAME]}
     BASE="$HOME/$NAME"
@@ -134,7 +133,6 @@ OLLAMA_BASE_URL=http://127.0.0.1:$OLLAMA_PORT
 HOST=127.0.0.1
 PORT=$PORT
 
-# Set to false if you have startup issues
 ENABLE_OTEL=true
 ENABLE_OTEL_TRACES=true
 ENABLE_OTEL_METRICS=true
@@ -145,7 +143,6 @@ OTEL_SERVICE_NAME=open-webui-$NAME
 ENV
     chmod 600 "$BASE/.env"
 
-    # Improved start.sh
     cat > "$BASE/start.sh" << 'START'
 #!/usr/bin/env bash
 set -euo pipefail
@@ -167,9 +164,25 @@ echo "✅ $NAME started (PID $(cat run/openwebui.pid))"
 START
     chmod +x "$BASE/start.sh"
 
-    # stop.sh
     cat > "$BASE/stop.sh" << 'STOP'
 #!/usr/bin/env bash
 BASE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 [ -f "$BASE/run/openwebui.pid" ] && kill "$(cat "$BASE/run/openwebui.pid")" 2>/dev/null || true
-rm -f "$BASE/run
+rm -f "$BASE/run/openwebui.pid"
+echo "🛑 $(basename "$BASE") stopped."
+STOP
+    chmod +x "$BASE/stop.sh"
+
+    echo "✅ $NAME setup complete"
+done
+
+echo ""
+echo "🎉 v10.3 Installation complete!"
+echo "Starting all services now..."
+"$MANAGER/start-all.sh"
+V10.3
+
+chmod +x ~/install-openwebui-v10.3.sh
+echo "✅ Installer v10.3 is ready on your laptop!"
+echo "Run it with:"
+echo "   ~/install-openwebui-v10.3.sh"
