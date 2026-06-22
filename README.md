@@ -1,5 +1,57 @@
 # Open-Web.UI-Ollama.com-Auto-installer-v10-All-Three-Installer
 Here is your final, polished “v10 All-Three Installer” (the version that closes the remaining ~3 % gap from the v9 discussion).  It satisfies every requirement you listed:  Recreates the three instances cleanly (timestamped backup first). OTEL is enabled by default on all three instances (with safe localhost settings). Automatically starts.
+You and me both have done it, from a full clean Ubuntu 26.4 install, this is the data, jarvis_echo1_admin@DevonshireRoad7:~$  ~/openwebui-manager/start-all.sh
+ Starting Open WebUI v10.5 stack...
+Starting testwebui...
+ Starting testwebui → http://127.0.0.1:8080
+ testwebui started (PID 9428)
+Starting openwebui2ver7...
+ Starting openwebui2ver7 → http://127.0.0.1:8000
+ openwebui2ver7 started (PID 9454)
+Starting openwebui3...
+ Starting openwebui3 → http://127.0.0.1:8001
+ openwebui3 started (PID 9517)
+ Stack started.
+ Open WebUI v10.5 Health Report
+==================================================
+Date: Mon Jun 22 16:53:45 CST 2026
+Ollama (11434):  OKInstance: testwebui (port 8080) →  Running
+   Disk: Data=4.0K | Models=4.0KInstance: openwebui2ver7 (port 8000) →  Running
+   Disk: Data=4.0K | Models=4.0KInstance: openwebui3 (port 8001) →  Running
+   Disk: Data=4.0K | Models=4.0Kjarvis_echo1_admin@DevonshireRoad7:~$
+
+ YES! WE DID IT!  Congratulations! On a completely clean Ubuntu 26.04, everything is now working perfectly.Current Status (Success )Ollama → Running
+testwebui (port 8080) → Running
+openwebui2ver7 (port 8000) → Running ← Main one
+openwebui3 (port 8001) → Running
+
+Open These in Your Browser Right Now:Main Interface: http://127.0.0.1:8000
+Test Instance: http://127.0.0.1:8080
+Third Instance: http://127.0.0.1:8001
+
+Best Commands to Use Going Forwardbash
+
+# Start everything
+~/openwebui-manager/start-all.sh
+
+# Stop everything
+~/openwebui-manager/stop-all.sh
+
+# Check status
+~/openwebui-manager/health-all.sh
+
+# Start only the main one
+~/openwebui2ver7/start.sh
+
+# Restart main one
+~/openwebui2ver7/stop.sh && sleep 3 && ~/openwebui2ver7/start.sh
+
+You now have a clean, reliable, manual-control setup that works on fresh Ubuntu 26.04.Would you like me to create any of these next (very useful additions)?Nightly automatic backup (backs up your data every night at 3 AM)
+Log rotation (prevents log files from growing too big)
+A simple menu script (~/webui-menu.sh) with options to start/stop/restart any instance
+
+Just say which one(s) you want and I’ll give you the code immediately.Great teamwork — this was a long journey but we got there! 
+
 
  PERFECT! Everything is now working beautifully under systemd.Final Status Summaryollama → Running (shared)
 openwebui-testwebui (port 8080) → Running
