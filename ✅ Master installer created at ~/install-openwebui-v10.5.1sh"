@@ -5,7 +5,7 @@ umask 077
 
 echo "=================================================="
 echo "🚀 Open WebUI All-Three Installer v10.5"
-echo "   Manual Control Only • No Systemd • Stable"
+echo "   Manual Control Only • Clean Install"
 echo "=================================================="
 
 MANAGER="$HOME/openwebui-manager"
@@ -19,13 +19,13 @@ declare -A INSTANCES=(
   [openwebui3]=8001
 )
 
-# ===================== System dependencies =====================
+# ===================== System deps =====================
 echo "📦 Installing system dependencies..."
 sudo apt update -y
 sudo apt install -y curl ca-certificates gnupg lsb-release psmisc iproute2 zstd \
                     ffmpeg build-essential pkg-config software-properties-common
 
-# Install Python 3.11 (required by Open WebUI on Ubuntu 26.04)
+# Python 3.11 for Ubuntu 26.04
 sudo add-apt-repository ppa:deadsnakes/ppa -y
 sudo apt update -y
 sudo apt install -y python3.11 python3.11-dev python3.11-venv python3.11-full python3-pip
@@ -41,7 +41,6 @@ cat > "$MANAGER/start-all.sh" << 'STARTALL'
 set -euo pipefail
 echo "🚀 Starting Open WebUI v10.5 stack..."
 
-# Start shared Ollama
 if ! curl -fsS "http://127.0.0.1:11434/api/version" >/dev/null 2>&1; then
     echo "🔄 Starting shared Ollama..."
     nohup ollama serve > "$HOME/openwebui-manager/logs/ollama.log" 2>&1 &
@@ -165,16 +164,18 @@ STOP
 done
 
 echo ""
-echo "🎉 v10.5 Installation complete!"
-echo "Use these commands:"
+echo "🎉 v10.5 Installation complete (Manual Mode)!"
+echo ""
+echo "Useful commands:"
 echo "   ~/openwebui-manager/start-all.sh     # Start all"
 echo "   ~/openwebui-manager/stop-all.sh      # Stop all"
 echo "   ~/openwebui-manager/health-all.sh    # Check status"
+echo "   ~/openwebui2ver7/start.sh            # Start main only"
 echo ""
 echo "Starting services now..."
 "$MANAGER/start-all.sh"
 V10.5
 
 chmod +x ~/install-openwebui-v10.5.sh
-echo "✅ v10.5 installer (manual only) created!"
+echo "✅ v10.5 (pure manual) installer created!"
 echo "Run it with: ~/install-openwebui-v10.5.sh"
