@@ -1,10 +1,11 @@
-cat > ~/install-openwebui-v10.2.sh << 'V10.2'
+cat > ~/install-openwebui-v10.3.sh << 'V10.3'
 #!/usr/bin/env bash
 set -euo pipefail
 umask 077
 
 echo "=================================================="
-echo "🚀 Open WebUI All-Three Installer v10.2 (Full OTEL)"
+echo "🚀 Open WebUI All-Three Installer v10.3 (Stable)"
+echo "   Full OTEL • Longer Startup • Robust Fixes"
 echo "=================================================="
 
 MANAGER="$HOME/openwebui-manager"
@@ -35,23 +36,26 @@ fi
 cat > "$MANAGER/start-all.sh" << 'STARTALL'
 #!/usr/bin/env bash
 set -euo pipefail
-echo "🚀 Starting Open WebUI v10.2 stack..."
+echo "🚀 Starting Open WebUI v10.3 stack..."
 
+# Start shared Ollama
 if ! curl -fsS "http://127.0.0.1:11434/api/version" >/dev/null 2>&1; then
     echo "🔄 Starting shared Ollama..."
     nohup ollama serve > "$HOME/openwebui-manager/logs/ollama.log" 2>&1 &
     echo $! > "$HOME/openwebui-manager/run/ollama.pid"
-    sleep 6
+    sleep 8
 fi
 
 for NAME in testwebui openwebui2ver7 openwebui3; do
     if [ -x "$HOME/$NAME/start.sh" ]; then
         echo "Starting $NAME..."
         "$HOME/$NAME/start.sh"
-        sleep 4
+        sleep 6
     fi
 done
-echo "✅ Stack started. Run health check."
+echo "✅ Stack started. Waiting for initialization..."
+sleep 25
+"$HOME/openwebui-manager/health-all.sh"
 STARTALL
 chmod +x "$MANAGER/start-all.sh"
 
@@ -72,7 +76,7 @@ chmod +x "$MANAGER/stop-all.sh"
 cat > "$MANAGER/health-all.sh" << 'HEALTH'
 #!/usr/bin/env bash
 set -euo pipefail
-echo "🔐 Open WebUI v10.2 Health Report"
+echo "🔐 Open WebUI v10.3 Health Report"
 echo "=================================================="
 echo "Date: $(date)"
 echo "Ollama (11434): $(curl -fsS "http://127.0.0.1:11434/api/version" >/dev/null 2>&1 && echo "✅ OK" || echo "❌ DOWN")"
@@ -89,7 +93,7 @@ done
 HEALTH
 chmod +x "$MANAGER/health-all.sh"
 
-# ===================== Create instances =====================
+# ===================== Create / Update instances =====================
 for NAME in "${!INSTANCES[@]}"; do
     PORT=${INSTANCES[$NAME]}
     BASE="$HOME/$NAME"
@@ -106,16 +110,16 @@ for NAME in "${!INSTANCES[@]}"; do
 
     python3.12 -m venv "$BASE/env"
     "$BASE/env/bin/pip" install --upgrade pip setuptools wheel
-
-    echo "   Installing Open WebUI..."
     "$BASE/env/bin/pip" install open-webui
 
     echo "   Installing full OTEL support..."
     "$BASE/env/bin/pip" install \
         opentelemetry-api opentelemetry-sdk opentelemetry-exporter-otlp-proto-grpc \
         opentelemetry-instrumentation opentelemetry-instrumentation-fastapi \
-        opentelemetry-instrumentation-asgi opentelemetry-instrumentation-system-metrics \
-        opentelemetry-instrumentation-httpx
+        opentelemetry-instrumentation-asgi opentelemetry-instrumentation-aiohttp-client \
+        opentelemetry-instrumentation-requests opentelemetry-instrumentation-urllib \
+        opentelemetry-instrumentation-urllib3 opentelemetry-instrumentation-httpx \
+        opentelemetry-instrumentation-system-metrics
 
     SECRET=$(python3.12 -c 'import secrets; print(secrets.token_urlsafe(48))')
     echo -n "$SECRET" > "$BASE/.webui_secret_key"
@@ -130,6 +134,7 @@ OLLAMA_BASE_URL=http://127.0.0.1:$OLLAMA_PORT
 HOST=127.0.0.1
 PORT=$PORT
 
+# Set to false if you have startup issues
 ENABLE_OTEL=true
 ENABLE_OTEL_TRACES=true
 ENABLE_OTEL_METRICS=true
@@ -140,6 +145,7 @@ OTEL_SERVICE_NAME=open-webui-$NAME
 ENV
     chmod 600 "$BASE/.env"
 
+    # Improved start.sh with better logging
     cat > "$BASE/start.sh" << 'START'
 #!/usr/bin/env bash
 set -euo pipefail
@@ -161,17 +167,6 @@ echo "✅ $NAME started (PID $(cat run/openwebui.pid))"
 START
     chmod +x "$BASE/start.sh"
 
-    echo "✅ $NAME setup complete"
-done
-
-echo ""
-echo "🎉 v10.2 Installation complete!"
-echo "Starting all services now..."
-"$MANAGER/start-all.sh" &
-sleep 25
-"$MANAGER/health-all.sh"
-V10.2
-
-chmod +x ~/install-openwebui-v10.2.sh
-echo "✅ Clean v10.2 installer created. Now run it:"
-echo "   ~/install-openwebui-v10.2.sh"
+    # Ensure stop.sh exists
+    cat > "$BASE/stop.sh" << 'STOP'
+#!/usr/bin
