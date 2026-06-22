@@ -1,0 +1,2 @@
+# Open-Web.UI-Ollama.com-Auto-installer-v10-All-Three-Installer
+Here is your final, polished “v10 All-Three Installer” (the version that closes the remaining ~3 % gap from the v9 discussion).  It satisfies every requirement you listed:  Recreates the three instances cleanly (timestamped backup first). OTEL is enabled by default on all three instances (with safe localhost settings). Automatically starts.
