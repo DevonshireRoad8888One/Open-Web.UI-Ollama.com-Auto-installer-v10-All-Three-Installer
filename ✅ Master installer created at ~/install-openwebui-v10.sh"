@@ -1,18 +1,17 @@
-cat > ~/install-openwebui-v10.3.sh << 'V10.3'
+cat > ~/install-openwebui-v10.4.sh << 'V10.4'
 #!/usr/bin/env bash
 set -euo pipefail
 umask 077
 
 echo "=================================================="
-echo "🚀 Open WebUI All-Three Installer v10.3 (Stable)"
-echo "   Full OTEL • Longer Startup • Robust Fixes"
+echo "🚀 Open WebUI All-Three Installer v10.4"
+echo "   Ubuntu 26.04 • Python 3.11 • Stable"
 echo "=================================================="
 
 MANAGER="$HOME/openwebui-manager"
 mkdir -p "$MANAGER"/{backups,logs,run}
 
 OLLAMA_PORT=11434
-OTEL_ENDPOINT="http://127.0.0.1:4317"
 
 declare -A INSTANCES=(
   [testwebui]=8080
@@ -20,12 +19,13 @@ declare -A INSTANCES=(
   [openwebui3]=8001
 )
 
-# ===================== System deps =====================
-echo "📦 Installing system dependencies..."
+# ===================== Install Python 3.11 =====================
+echo "📦 Installing Python 3.11 (required by Open WebUI)..."
 sudo apt update -y
-sudo apt install -y curl ca-certificates gnupg lsb-release psmisc iproute2 zstd \
-                    ffmpeg build-essential pkg-config software-properties-common \
-                    python3.12 python3.12-dev python3.12-venv python3-pip
+sudo apt install -y software-properties-common curl
+sudo add-apt-repository ppa:deadsnakes/ppa -y
+sudo apt update -y
+sudo apt install -y python3.11 python3.11-dev python3.11-venv python3.11-full python3-pip
 
 if ! command -v ollama >/dev/null 2>&1; then
     echo "🧠 Installing Ollama..."
@@ -36,7 +36,7 @@ fi
 cat > "$MANAGER/start-all.sh" << 'STARTALL'
 #!/usr/bin/env bash
 set -euo pipefail
-echo "🚀 Starting Open WebUI v10.3 stack..."
+echo "🚀 Starting Open WebUI v10.4 stack..."
 
 if ! curl -fsS "http://127.0.0.1:11434/api/version" >/dev/null 2>&1; then
     echo "🔄 Starting shared Ollama..."
@@ -52,7 +52,7 @@ for NAME in testwebui openwebui2ver7 openwebui3; do
         sleep 6
     fi
 done
-echo "✅ Stack started. Waiting for initialization..."
+echo "✅ Stack started. Waiting..."
 sleep 25
 "$HOME/openwebui-manager/health-all.sh"
 STARTALL
@@ -75,7 +75,7 @@ chmod +x "$MANAGER/stop-all.sh"
 cat > "$MANAGER/health-all.sh" << 'HEALTH'
 #!/usr/bin/env bash
 set -euo pipefail
-echo "🔐 Open WebUI v10.3 Health Report"
+echo "🔐 Open WebUI v10.4 Health Report"
 echo "=================================================="
 echo "Date: $(date)"
 echo "Ollama (11434): $(curl -fsS "http://127.0.0.1:11434/api/version" >/dev/null 2>&1 && echo "✅ OK" || echo "❌ DOWN")"
@@ -107,20 +107,11 @@ for NAME in "${!INSTANCES[@]}"; do
     mkdir -p "$BASE"/{data,models,logs,run}
     chmod 700 "$BASE" "$BASE"/{data,models,logs,run}
 
-    python3.12 -m venv "$BASE/env"
+    python3.11 -m venv "$BASE/env"
     "$BASE/env/bin/pip" install --upgrade pip setuptools wheel
     "$BASE/env/bin/pip" install open-webui
 
-    echo "   Installing full OTEL support..."
-    "$BASE/env/bin/pip" install \
-        opentelemetry-api opentelemetry-sdk opentelemetry-exporter-otlp-proto-grpc \
-        opentelemetry-instrumentation opentelemetry-instrumentation-fastapi \
-        opentelemetry-instrumentation-asgi opentelemetry-instrumentation-aiohttp-client \
-        opentelemetry-instrumentation-requests opentelemetry-instrumentation-urllib \
-        opentelemetry-instrumentation-urllib3 opentelemetry-instrumentation-httpx \
-        opentelemetry-instrumentation-system-metrics
-
-    SECRET=$(python3.12 -c 'import secrets; print(secrets.token_urlsafe(48))')
+    SECRET=$(python3.11 -c 'import secrets; print(secrets.token_urlsafe(48))')
     echo -n "$SECRET" > "$BASE/.webui_secret_key"
     chmod 600 "$BASE/.webui_secret_key"
 
@@ -132,14 +123,7 @@ ENABLE_SIGNUP=False
 OLLAMA_BASE_URL=http://127.0.0.1:$OLLAMA_PORT
 HOST=127.0.0.1
 PORT=$PORT
-
-ENABLE_OTEL=true
-ENABLE_OTEL_TRACES=true
-ENABLE_OTEL_METRICS=true
-ENABLE_OTEL_LOGS=true
-OTEL_EXPORTER_OTLP_ENDPOINT=$OTEL_ENDPOINT
-OTEL_EXPORTER_OTLP_INSECURE=true
-OTEL_SERVICE_NAME=open-webui-$NAME
+ENABLE_OTEL=false
 ENV
     chmod 600 "$BASE/.env"
 
@@ -177,12 +161,11 @@ STOP
 done
 
 echo ""
-echo "🎉 v10.3 Installation complete!"
-echo "Starting all services now..."
+echo "🎉 v10.4 Installation complete!"
+echo "Starting services now..."
 "$MANAGER/start-all.sh"
-V10.3
+V10.4
 
-chmod +x ~/install-openwebui-v10.3.sh
-echo "✅ Installer v10.3 is ready on your laptop!"
-echo "Run it with:"
-echo "   ~/install-openwebui-v10.3.sh"
+chmod +x ~/install-openwebui-v10.4.sh
+echo "✅ Installer ready. Run it with:"
+echo "~/install-openwebui-v10.4.sh"
