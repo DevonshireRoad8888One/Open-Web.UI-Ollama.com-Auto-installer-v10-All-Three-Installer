@@ -1,6 +1,46 @@
 # Open-Web.UI-Ollama.com-Auto-installer-v10-All-Three-Installer
 Here is your final, polished “v10 All-Three Installer” (the version that closes the remaining ~3 % gap from the v9 discussion).  It satisfies every requirement you listed:  Recreates the three instances cleanly (timestamped backup first). OTEL is enabled by default on all three instances (with safe localhost settings). Automatically starts.
-You and me both have done it, from a full clean Ubuntu 26.4 install, this is the data, jarvis_echo1_admin@DevonshireRoad7:~$  ~/openwebui-manager/start-all.sh
+You and me both have done it, from a full clean Ubuntu 26.4 install, this is the data, 
+
+
+Awesome news, I just tested the copy of this Final v10.5 Installer (Copy this entire block) that we know works, and I tested the Git Hub copy of it, I copied it from Git Hub, just copy and paste into Ubutu terminal, and it works fine, Final v10.5 Installer (Copy this entire block) Here is the good health check, jarvis_echo1_admin@DevonshireRoad7:~$ ~/openwebui-manager/start-all.sh
+ Starting Open WebUI v10.5 stack...
+Starting testwebui...
+ Starting testwebui → http://127.0.0.1:8080
+ testwebui started (PID 9402)
+Starting openwebui2ver7...
+ Starting openwebui2ver7 → http://127.0.0.1:8000
+ openwebui2ver7 started (PID 9429)
+Starting openwebui3...
+ Starting openwebui3 → http://127.0.0.1:8001
+ openwebui3 started (PID 9505)
+ Stack started.
+ Open WebUI v10.5 Health Report
+==================================================
+Date: Mon Jun 22 17:15:44 CST 2026
+Ollama (11434):  OKInstance: testwebui (port 8080) →  Running
+   Disk: Data=4.0K | Models=4.0KInstance: openwebui2ver7 (port 8000) →  Running
+   Disk: Data=4.0K | Models=4.0KInstance: openwebui3 (port 8001) →  Running
+   Disk: Data=4.0K | Models=4.0Kjarvis_echo1_admin@DevonshireRoad7:~$
+
+ YES! We finally nailed it!Congratulations — your v10.5 installer is now working perfectly on a fresh Ubuntu 26.04 install. All three instances are up and healthy.Final Working StatusOllama:  Running (shared)
+testwebui:  Running on http://127.0.0.1:8080
+openwebui2ver7:  Running on http://127.0.0.1:8000 ← Main one
+openwebui3:  Running on http://127.0.0.1:8001
+
+Recommended Daily Commandsbash
+
+~/openwebui-manager/start-all.sh      # Start all three
+~/openwebui-manager/stop-all.sh       # Stop all
+~/openwebui-manager/health-all.sh     # Check status
+
+# Start only main one
+~/openwebui2ver7/start.sh
+
+Your GitHub copy is now good — you can keep using that v10.5 version.
+
+
+jarvis_echo1_admin@DevonshireRoad7:~$  ~/openwebui-manager/start-all.sh
  Starting Open WebUI v10.5 stack...
 Starting testwebui...
  Starting testwebui → http://127.0.0.1:8080
