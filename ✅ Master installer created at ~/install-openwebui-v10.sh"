@@ -145,7 +145,7 @@ OTEL_SERVICE_NAME=open-webui-$NAME
 ENV
     chmod 600 "$BASE/.env"
 
-    # Improved start.sh with better logging
+    # Improved start.sh
     cat > "$BASE/start.sh" << 'START'
 #!/usr/bin/env bash
 set -euo pipefail
@@ -167,6 +167,9 @@ echo "✅ $NAME started (PID $(cat run/openwebui.pid))"
 START
     chmod +x "$BASE/start.sh"
 
-    # Ensure stop.sh exists
+    # stop.sh
     cat > "$BASE/stop.sh" << 'STOP'
-#!/usr/bin
+#!/usr/bin/env bash
+BASE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+[ -f "$BASE/run/openwebui.pid" ] && kill "$(cat "$BASE/run/openwebui.pid")" 2>/dev/null || true
+rm -f "$BASE/run
