@@ -19,13 +19,12 @@ declare -A INSTANCES=(
   [openwebui3]=8001
 )
 
-# ===================== Install Python 3.11 =====================
-echo "📦 Installing Python 3.11 (required by Open WebUI)..."
+# ===================== System deps =====================
+echo "📦 Installing system dependencies..."
 sudo apt update -y
-sudo apt install -y software-properties-common curl
-sudo add-apt-repository ppa:deadsnakes/ppa -y
-sudo apt update -y
-sudo apt install -y python3.11 python3.11-dev python3.11-venv python3.11-full python3-pip
+sudo apt install -y curl ca-certificates gnupg lsb-release psmisc iproute2 zstd \
+                    ffmpeg build-essential pkg-config software-properties-common \
+                    python3.11 python3.11-dev python3.11-venv python3.11-full python3-pip
 
 if ! command -v ollama >/dev/null 2>&1; then
     echo "🧠 Installing Ollama..."
@@ -167,5 +166,5 @@ echo "Starting services now..."
 V10.4
 
 chmod +x ~/install-openwebui-v10.4.sh
-echo "✅ Installer ready. Run it with:"
-echo "~/install-openwebui-v10.4.sh"
+echo "✅ Updated v10.4 installer ready!"
+echo "Run it with: ~/install-openwebui-v10.4.sh"
