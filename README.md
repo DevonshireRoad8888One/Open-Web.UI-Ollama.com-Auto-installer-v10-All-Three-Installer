@@ -1,6 +1,30 @@
 # Open-Web.UI-Ollama.com-Auto-installer-v10-All-Three-Installer
 Here is your final, polished “v10 All-Three Installer” (the version that closes the remaining ~3 % gap from the v9 discussion).  It satisfies every requirement you listed:  Recreates the three instances cleanly (timestamped backup first). OTEL is enabled by default on all three instances (with safe localhost settings). Automatically starts.
 
+ PERFECT! Everything is now working beautifully under systemd.Final Status Summaryollama → Running (shared)
+openwebui-testwebui (port 8080) → Running
+openwebui-openwebui2ver7 (port 8000) → Running ← Main one
+openwebui-openwebui3 (port 8001) → Running
+
+All services will now start automatically on boot.Quick Access LinksMain UI: http://127.0.0.1:8000
+Test UI: http://127.0.0.1:8080
+Third UI: http://127.0.0.1:8001
+
+Useful Commands Going Forwardbash
+
+# Check everything at a glance
+sudo systemctl status ollama openwebui-openwebui2ver7 --no-pager
+
+# Restart everything
+sudo systemctl restart openwebui-testwebui openwebui-openwebui2ver7 openwebui-openwebui3
+
+# Stop everything
+sudo systemctl stop openwebui-testwebui openwebui-openwebui2ver7 openwebui-openwebui3
+
+# View live logs (very useful)
+journalctl -u openwebui-openwebui2ver7 -f
+
+
 Here is your final, polished “v10 All-Three Installer” (the version that closes the remaining ~3 % gap from the v9 discussion).
 
 It satisfies every requirement you listed:
