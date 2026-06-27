@@ -1,5 +1,6 @@
 # Open-Web.UI-Ollama.com-Auto-installer-v10-All-Three-Installer
-This is now a clean, maintainable, production-ready setup that you can run for years. Enjoy! 🚀
+This is now a clean, maintainable, production-ready setup that you can run for years.
+Enjoy! 🚀
 Here is your final, polished “v10 All-Three Installer” (the version that closes the remaining ~3 % gap from the v9 discussion).  It satisfies every requirement you listed:  Recreates the three instances cleanly (timestamped backup first). OTEL is enabled by default on all three instances (with safe localhost settings). Automatically starts.
 You and me both have done it, from a full clean Ubuntu 26.4 install, this is the data, 
 
