@@ -1,3 +1,14 @@
+YES! We finally nailed it!Congratulations — your v10.5 installer is now working perfectly on a fresh Ubuntu 26.04 install. All three instances are up and healthy.Final Working StatusOllama: Running (shared) testwebui: Running on http://127.0.0.1:8080 openwebui2ver7: Running on http://127.0.0.1:8000 ← Main one openwebui3: Running on http://127.0.0.1:8001
+
+Recommended Daily Commandsbash
+
+~/openwebui-manager/start-all.sh # Start all three ~/openwebui-manager/stop-all.sh # Stop all ~/openwebui-manager/health-all.sh # Check status
+
+Start only main one
+~/openwebui2ver7/start.sh
+
+Your GitHub copy is now good — you can keep using that v10.5 version.
+
 # Open-Web.UI-Ollama.com-Auto-installer-v10-All-Three-Installer
 This is now a clean, maintainable, production-ready setup that you can run for years.
 Enjoy! 🚀
