@@ -1,3 +1,4 @@
+System Prompt: Summarize or extract key points and do a fully detailed analysis and summery in very much detailed manner.
 YES! We finally nailed it!Congratulations — your v10.5 installer is now working perfectly on a fresh Ubuntu 26.04 install. All three instances are up and healthy.Final Working StatusOllama: Running (shared) testwebui: Running on http://127.0.0.1:8080 openwebui2ver7: Running on http://127.0.0.1:8000 ← Main one openwebui3: Running on http://127.0.0.1:8001
 
 Recommended Daily Commandsbash
